@@ -145,7 +145,6 @@ def tm_get_events(artist_name: str, country="US"):
             "album_id": None,
             "album_name": None,
             "album_release_date": None,
-            "track_id": None,
             "track_name": None,
             "track_number": None,
             "disc_number": None,
