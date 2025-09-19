@@ -141,13 +141,10 @@ def tm_get_events(artist_name: str, country="US"):
         rows.append({
             "record_type": "event",
             "artist": artist_name,
-            "spotify_artist_id": None,
-            "album_id": None,
             "album_name": None,
             "album_release_date": None,
             "track_name": None,
             "track_number": None,
-            "disc_number": None,
             "explicit": None,
             "duration_ms": None,
             "popularity": None,
