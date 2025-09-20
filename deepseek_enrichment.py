@@ -90,28 +90,39 @@ def calculate_metrics(row):
 
 def enrich_with_ai(events_df):
     """Add AI-generated insights to events"""
+    artist_name = events_df['artist'].iloc[0] if not events_df.empty else "Unknown"
+    
     for i, row in events_df.iterrows():
         try:
-            prompt = f"""Analyze this concert event and return JSON with exactly these fields:
-{{"category": "Concert/Festival/Tour", "tags": ["genre", "vibe"], "summary": "brief description", "sentiment": "Positive/Neutral/Negative"}}
+            # More specific prompt for concert analysis
+            event_name = row.get('name', '')
+            venue = row.get('venue', '')
+            city = row.get('city', '')
+            
+            prompt = f"""Analyze this {artist_name} concert event and return JSON:
+{{"category": "Stadium Tour/Arena Show/Festival/Intimate Venue", "tour_type": "World Tour/Residency/Festival/Special Event", "tags": ["pop", "sold-out", "vip"], "summary": "15-word description", "vibe": "High Energy/Intimate/Festival/Exclusive"}}
 
-Event: {row.get('name', 'Unknown')} by {row.get('artist', 'Unknown')} in {row.get('city', 'Unknown')} at {row.get('venue', 'Unknown')}"""
+Event: "{event_name}" by {artist_name}
+Venue: {venue} in {city}
+Context: This is a live concert performance by {artist_name}."""
             
             response = deepseek_chat(prompt)
             
-            # Extract JSON from response
+            # Extract JSON from response  
             try:
-                ai_data = json.loads(response)
+                ai_data = json.loads(response.strip('```json').strip('```').strip())
                 events_df.at[i, 'category'] = ai_data.get('category', 'Concert')
-                events_df.at[i, 'tags'] = ', '.join(ai_data.get('tags', [])[:3])
-                events_df.at[i, 'ai_summary'] = ai_data.get('summary', '')[:50]
-                events_df.at[i, 'sentiment'] = ai_data.get('sentiment', 'Neutral')
+                events_df.at[i, 'tour_type'] = ai_data.get('tour_type', 'Tour')
+                events_df.at[i, 'tags'] = ', '.join(ai_data.get('tags', [])[:4])
+                events_df.at[i, 'summary'] = ai_data.get('summary', f'{artist_name} live at {venue}')[:60]
+                events_df.at[i, 'vibe'] = ai_data.get('vibe', 'High Energy')
             except:
-                # Fallback values
-                events_df.at[i, 'category'] = 'Concert'
-                events_df.at[i, 'tags'] = 'live-music'
-                events_df.at[i, 'ai_summary'] = f"{row.get('artist', '')} live performance"
-                events_df.at[i, 'sentiment'] = 'Positive'
+                # Better fallback values
+                events_df.at[i, 'category'] = 'Arena Show' if 'arena' in venue.lower() or 'center' in venue.lower() else 'Concert'
+                events_df.at[i, 'tour_type'] = 'World Tour' if len(events_df) > 10 else 'Tour'
+                events_df.at[i, 'tags'] = f'{artist_name.lower().replace(" ", "-")}, live, concert'
+                events_df.at[i, 'summary'] = f'{artist_name} performing live at {venue}'
+                events_df.at[i, 'vibe'] = 'High Energy'
                 
         except Exception as e:
             print(f"AI enrichment failed for row {i}: {e}")
@@ -181,14 +192,81 @@ def main():
     
     final_df.to_csv(output_path, index=False)
     
-    print(f"\nSaved enriched data: {output_path}")
-    print(f"Total records: {len(final_df)} ({len(tracks)} tracks, {len(events)} events)")
+    print(f"\n✅ SAVED: {output_path}")
+    print(f"📊 TOTAL: {len(final_df)} records ({len(tracks)} tracks, {len(events)} events)\n")
     
-    # Show preview of enriched events
-    display_cols = ["artist", "name", "city", "days_to_event", "hype_score", "sellout_risk", "category", "tags"]
-    available_cols = [col for col in display_cols if col in events.columns]
-    print(f"\nEnriched Events Preview:")
-    print(events[available_cols].head(10).to_string(index=False))
+    # Side-by-side display: Albums/Tracks (Left) | Events (Right)
+    print("=" * 120)
+    print(f"🎵 {events['artist'].iloc[0] if not events.empty else 'ARTIST'} - MUSIC CATALOG & LIVE EVENTS")
+    print("=" * 120)
+    
+    # Left side - Albums/Tracks summary
+    if not tracks.empty:
+        album_summary = tracks.groupby('album').agg({
+            'name': 'count',
+            'popularity': 'mean'
+        }).round(1).reset_index()
+        album_summary.columns = ['Album', 'Tracks', 'Avg_Pop']
+        
+        print("🎼 DISCOGRAPHY".ljust(60) + "🎤 UPCOMING CONCERTS")
+        print("-" * 60 + "-" * 60)
+        
+        # Display albums and events side by side
+        max_rows = max(len(album_summary), len(events))
+        
+        for i in range(max_rows):
+            left_line = ""
+            right_line = ""
+            
+            # Left side - Albums
+            if i < len(album_summary):
+                album = album_summary.iloc[i]
+                left_line = f"{album['Album'][:35]:<35} {album['Tracks']:>2}📀 {album['Avg_Pop']:>4.1f}⭐"
+            else:
+                left_line = " " * 60
+            
+            # Right side - Events  
+            if i < len(events):
+                event = events.iloc[i]
+                venue_city = f"{event.get('venue', 'TBA')[:20]} - {event.get('city', 'TBA')}"
+                risk_emoji = event.get('sellout_risk', '🟢 Low')[:7]
+                hype = event.get('hype_score', 0)
+                days = event.get('days_to_event', 'TBA')
+                
+                right_line = f"{venue_city[:35]:<35} {risk_emoji} {hype:>4.1f}🔥 {str(days):>3}d"
+            
+            print(left_line + right_line)
+        
+        print("-" * 120)
+        
+        # Footer with key insights
+        if not events.empty:
+            high_risk = len(events[events['sellout_risk'].str.contains('🔴', na=False)])
+            avg_hype = events['hype_score'].mean()
+            next_show_days = events['days_to_event'].min()
+            
+            print(f"🎯 INSIGHTS: {high_risk} high-risk shows | {avg_hype:.1f} avg hype | Next show in {next_show_days} days")
+            
+            # Show top 3 hottest events
+            print(f"\n🔥 HOTTEST SHOWS:")
+            top_events = events.head(3)
+            for _, event in top_events.iterrows():
+                category = event.get('category', 'Concert')
+                vibe = event.get('vibe', 'High Energy')
+                summary = event.get('summary', '')[:50]
+                print(f"   • {event.get('name', 'Event')[:30]} - {category} | {vibe} | {summary}")
+    
+    else:
+        # Just events if no tracks
+        print("🎤 LIVE EVENTS SCHEDULE")
+        print("-" * 60)
+        for _, event in events.head(10).iterrows():
+            venue_info = f"{event.get('venue', 'TBA')} - {event.get('city', 'TBA')}"
+            risk = event.get('sellout_risk', '🟢 Low')
+            hype = event.get('hype_score', 0)
+            print(f"{venue_info[:40]:<40} {risk} {hype:>4.1f}🔥")
+    
+    print("=" * 120)
 
 if __name__ == "__main__":
     main()
