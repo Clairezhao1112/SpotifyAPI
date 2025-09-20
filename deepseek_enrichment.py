@@ -51,18 +51,17 @@ def add_ai_data(events):
     artist = events['artist'].iloc[0] if not events.empty else "Unknown"
     for i, row in events.iterrows():
         try:
-            prompt = f"Concert analysis JSON: {{'category': 'Stadium/Arena/Club', 'vibe': 'High Energy/Intimate'}} for {artist} at {row.get('venue', '')}"
+            venue = row.get('venue', '')
+            city = row.get('city', '')
+            prompt = f"Write a brief 8-12 word description for this {artist} concert at {venue} in {city}. Return only the description, no JSON."
             resp = requests.post("https://api.deepseek.com/v1/chat/completions",
                 headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"},
-                json={"model": "deepseek-chat", "temperature": 0.1, "max_tokens": 150, "messages": [{"role": "user", "content": prompt}]}
+                json={"model": "deepseek-chat", "temperature": 0.3, "max_tokens": 100, "messages": [{"role": "user", "content": prompt}]}
             ).json()["choices"][0]["message"]["content"]
             
-            data = json.loads(resp.strip('```json').strip('```'))
-            events.at[i, 'category'] = data.get('category', 'Concert')
-            events.at[i, 'vibe'] = data.get('vibe', 'High Energy')
+            events.at[i, 'description'] = resp.strip('"').strip()[:50]
         except:
-            events.at[i, 'category'] = 'Concert'
-            events.at[i, 'vibe'] = 'High Energy'
+            events.at[i, 'description'] = f"{artist} live at {venue}"[:50]
     return events
 
 def main():
@@ -103,8 +102,8 @@ def main():
         risk = e.get('sellout_risk', '🟢 Low')
         hype = e.get('hype_score', 0)
         days = e.get('days_to_event', 'TBA')
-        cat = e.get('category', 'Show')[:10]
-        print(f"{name:<30} | {venue:<32} | {risk} {hype:>4.1f}🔥 {str(days):>3}d {cat}")
+        desc = e.get('description', 'Concert')[:35]
+        print(f"{name:<30} | {venue:<32} | {risk} {hype:>4.1f}🔥 {str(days):>3}d | {desc}")
     
     print("="*100)
     high_risk = len(events[events['sellout_risk'].str.contains('🔴')])
