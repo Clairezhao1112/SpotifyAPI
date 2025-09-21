@@ -13,8 +13,8 @@ pip install -r requirements.txt
 
 You will need API keys for Spotify and DeepSeek. 
 
-SPOTIFY_CID=a2fcd932726e496dbfb04cec705edea4
+CID="a2fcd932726e496dbfb04cec705edea4"
 
-SPOTIFY_SEC=1c46ff7084d945f795227d3e408ad2a8
+_SEC="1c46ff7084d945f795227d3e408ad2a8"
 
-DEEPSEEK_API_KEY=sk-a7f42564324a433b836f39b479e4dfa8
+DEEPSEEK_API_KEY="sk-a7f42564324a433b836f39b479e4dfa8"
