@@ -2,5 +2,5 @@
 
 Next, I tried a similar approach with Ticketmaster. Initially, I attempted to scrape their website, but the AI-generated code expected me to have an API key, which Ticketmaster would not provide for free. I prompted AI again with the page source and clarified that I am scraping Ticketmaster and not using its API. API. A recurring bug I found was that the code did not properly use the user’s artist name input, and in many runs the events were either not printed or not found in the output. I manually fixed these issues by ensuring the scraper correctly accepted 
 
-I prompt Cluade.AI to condense the code to about 100 lines. By doing this, AI helped me remove all helper functions and integrated them into 3 helpful main functions, remove extensive error handling, and condensed JSON parsing. The performance of this code was surprisingly the same as the original output, but I think the runtime might have been longer and lack of really detailed error handling. 
+I prompt Cluade.AI to condense the code to about 150 lines. By doing this, AI helped me remove all helper functions and integrated them into 3 helpful main functions, remove extensive error handling, and condensed JSON parsing. The performance of this code was surprisingly the same as the original output, but I think the runtime might have been longer and lack of really detailed error handling. 
 

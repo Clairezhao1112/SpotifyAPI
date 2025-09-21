@@ -2,9 +2,8 @@ import os, re, json, requests, pandas as pd
 from bs4 import BeautifulSoup
 
 
-CID = os.getenv("SPOTIFY_CID", "a2fcd932726e496dbfb04cec705edea4")
-SEC = os.getenv("SPOTIFY_SEC", "1c46ff7084d945f795227d3e408ad2a8")
-
+CID = "a2fcd932726e496dbfb04cec705edea4"
+SEC = "1c46ff7084d945f795227d3e408ad2a8"
 
 def get_spotify_data(artist):
     """
@@ -25,7 +24,7 @@ def get_spotify_data(artist):
     ).json()["access_token"]
     h = {"Authorization": f"Bearer {token}"}
 
-    # Find artist_id via search endpoint ----
+    # Find artist_id via search endpoint
     artist_id = requests.get(
         "https://api.spotify.com/v1/search",
         headers=h,
@@ -40,7 +39,7 @@ def get_spotify_data(artist):
         albums.extend(data["items"])
         url = data.get("next") 
 
-    # For each album, fetch tracks and collect basic fields ----
+    # For each album, fetch tracks and collect basic fields 
     tracks = []
     for album in albums:
         album_tracks = requests.get(
@@ -98,14 +97,12 @@ def get_ticketmaster_events(artist):
 
     events = []
 
-    #  Visit each candidate event page ----
     for url in urls:
         try:
             # Normalize to absolute URL and drop query params
             full_url = url if url.startswith("http") else f"https://www.ticketmaster.com{url}"
             page = requests.get(full_url.split("?")[0], headers=ua, timeout=10)
 
-            # ---- (4) Parse JSON-LD blocks; look for Event objects ----
             psoup = BeautifulSoup(page.text, "html.parser")
             for script in psoup.find_all("script", type="application/ld+json"):
                 try:
@@ -138,7 +135,6 @@ def get_ticketmaster_events(artist):
             continue
 
     return events
-
 
 def main():
     """
