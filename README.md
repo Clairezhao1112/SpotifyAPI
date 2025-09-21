@@ -11,7 +11,7 @@ Then install dependencies with:
 
 pip install -r requirements.txt
 
-You will need API keys for Spotify and DeepSeek. Set them as environment variables or place them in a .env file:
+You will need API keys for Spotify and DeepSeek. 
 
 SPOTIFY_CID=a2fcd932726e496dbfb04cec705edea4
 
